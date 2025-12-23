@@ -1,0 +1,82 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  VIEWER
+  EDITOR
+}
+
+model User {
+  id                    String   @id @default(uuid()) @unique
+  email                 String   @unique 
+  hashedRefreshToken    String?   
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  ownedFolders Folder[] @relation("FolderOwner")
+  ownedFiles   File[]   @relation("FileOwner")
+
+  permissions Permission[]
+}
+
+model Folder {
+  id        String   @id @default(uuid()) @unique
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  ownerId String
+  owner   User   @relation("FolderOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   Folder? @relation("FolderHierarchy", fields: [parentId], references: [id], onDelete: Cascade)
+
+  children Folder[] @relation("FolderHierarchy")
+  files    File[]
+
+  permissions Permission[]
+
+  @@unique([name, parentId])
+}
+
+model File {
+  id         String   @id @default(uuid()) @unique
+  name       String
+  size       BigInt   
+  mimeType   String   
+  storageKey String   
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  ownerId String
+  owner   User   @relation("FileOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+
+  parentId String?
+  parent   Folder? @relation(fields: [parentId], references: [id], onDelete: Cascade)
+
+  permissions Permission[]
+  @@unique([name, parentId])
+}
+
+model Permission {
+  id        String   @id @default(uuid()) @unique
+  role      Role     @default(VIEWER)
+  createdAt DateTime @default(now())
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  folderId String?
+  folder   Folder? @relation(fields: [folderId], references: [id], onDelete: Cascade)
+
+  fileId String?
+  file   File? @relation(fields: [fileId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, folderId])
+  @@unique([userId, fileId])
+}
