@@ -1,10 +1,7 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
-
-// Імпорт API папок
-import { getFolderContent } from '../api/directories'; 
+import { getFolderContent, getSharedContent } from '../api/directories'; 
 import { createFolder as apiCreateFolder, renameFolder as apiRenameFolder, deleteFolder as apiDeleteFolder } from '../api/folders'; 
-
-// Імпорт API файлів (НОВЕ)
+import { getFolderPermissions, getFilePermissions, replaceFolderPermissions, replaceFilePermissions } from '../api/permissions';
 import { uploadFile as apiUploadFile, renameFile as apiRenameFile, deleteFile as apiDeleteFile, downloadFile as apiDownloadFile } from '../api/files';
 
 const FileSystemContext = createContext();
@@ -16,7 +13,6 @@ export const FileSystemProvider = ({ children }) => {
   const [currentFolder, setCurrentFolder] = useState(null); 
   const [isLoading, setIsLoading] = useState(false);
 
-  // --- FETCH CONTENT ---
   const fetchContent = useCallback(async (folderId = undefined) => {
     setIsLoading(true);
     try {
@@ -40,32 +36,43 @@ export const FileSystemProvider = ({ children }) => {
     }
   }, []);
 
-  // --- FOLDER ACTIONS ---
+  const fetchSharedContent = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const data = await getSharedContent();
+      
+      setFolders(data.folders || []);
+      setFiles(data.files || []);
+      setBreadcrumbs([]); 
+      setCurrentFolder({ name: 'Shared with me' }); 
+      
+    } catch (error) {
+      console.error("Context: Failed to fetch shared content", error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
   const createFolder = async (name, parentId = undefined) => {
     try {
       const newFolder = await apiCreateFolder(name, parentId);
       setFolders(prev => [...prev, newFolder]);
     } catch (error) {
-      console.error(error);
-      alert("Error creating folder");
+      console.error("File creation error:", error);
+      throw error;
     }
   };
 
-  // --- FILE ACTIONS (ОНОВЛЕНО) ---
-
-  // 1. Завантаження файлу
   const uploadFile = async (file, parentId = undefined) => {
     try {
       const newFile = await apiUploadFile(file, parentId);
-      // Додаємо новий файл у стейт, щоб він одразу з'явився
       setFiles(prev => [...prev, newFile]);
     } catch (error) {
       console.error("Context upload error:", error);
-      throw error; // Прокидаємо помилку, щоб UI міг зняти стан завантаження
+      throw error; 
     }
   };
 
-  // 2. Завантаження файлу на комп'ютер (Download)
   const downloadFile = async (fileId, fileName) => {
     try {
       await apiDownloadFile(fileId, fileName);
@@ -75,20 +82,16 @@ export const FileSystemProvider = ({ children }) => {
     }
   };
 
-  // --- SHARED ACTIONS (DELETE / RENAME) ---
-
   const deleteItem = async (id, isFolder) => {
     try {
       if (isFolder) {
         await apiDeleteFolder(id);
         setFolders(prev => prev.filter(f => f.id !== id));
       } else {
-        // Логіка для файлів
         await apiDeleteFile(id);
         setFiles(prev => prev.filter(f => f.id !== id));
       }
     } catch (error) {
-      console.error(error);
       throw error;
     }
   };
@@ -99,7 +102,6 @@ export const FileSystemProvider = ({ children }) => {
         await apiRenameFolder(id, newName);
         setFolders(prev => prev.map(f => f.id === id ? { ...f, name: newName } : f));
       } else {
-        // Логіка для файлів
         await apiRenameFile(id, newName);
         setFiles(prev => prev.map(f => f.id === id ? { ...f, name: newName } : f));
       }
@@ -109,12 +111,36 @@ export const FileSystemProvider = ({ children }) => {
     }
   };
   
-  const updatePermissions = () => { /* Future implementation */ };
+  const fetchItemPermissions = async (id, isFolder) => {
+    try {
+      if (isFolder) {
+        return await getFolderPermissions(id);
+      } else {
+        return await getFilePermissions(id);
+      }
+    } catch (error) {
+      console.error("Context: Failed to fetch permissions", error);
+      throw error;
+    }
+  };
+
+  const saveItemPermissions = async (id, isFolder, permissionsList) => {
+    try {
+      if (isFolder) {
+        await replaceFolderPermissions(id, permissionsList);
+      } else {
+        await replaceFilePermissions(id, permissionsList);
+      } 
+    } catch (error) {
+      console.error("Context: Failed to save permissions", error);
+      throw error;
+    }
+  };
 
   return (
     <FileSystemContext.Provider value={{ 
       folders, files, breadcrumbs, currentFolder, isLoading,
-      fetchContent, createFolder, uploadFile, downloadFile, deleteItem, renameItem, updatePermissions 
+      fetchContent, createFolder, uploadFile, downloadFile, deleteItem, renameItem, fetchItemPermissions, saveItemPermissions, fetchSharedContent
     }}>
       {children}
     </FileSystemContext.Provider>

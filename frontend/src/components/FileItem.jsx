@@ -5,8 +5,7 @@ import { RenameModal, ShareModal, DeleteConfirmModal } from './Modals';
 import formatFileSize from '../utils/file-size-formatter.utils';
 
 const FileItem = ({ item, isFolder, onClick }) => {
-  // Додаємо downloadFile з контексту
-  const { deleteItem, renameItem, updatePermissions, downloadFile } = useFileSystem();
+  const { deleteItem, renameItem, downloadFile, fetchItemPermissions, saveItemPermissions, } = useFileSystem();
   
   const [showMenu, setShowMenu] = useState(false);
   const [isRenameOpen, setIsRenameOpen] = useState(false);
@@ -30,11 +29,14 @@ const FileItem = ({ item, isFolder, onClick }) => {
     setShowMenu(!showMenu);
   };
 
-  // Функція для скачування через меню
   const handleDownload = (e) => {
-    e.stopPropagation();
-    downloadFile(item.id, item.name);
-    setShowMenu(false);
+    try{
+      e.stopPropagation();
+      downloadFile(item.id, item.name);
+      setShowMenu(false);
+    } catch(error) {
+      alert(error.response?.data?.message || error.message || 'Unknown error occurred while downloading file ')
+    }
   };
 
   return (
@@ -51,7 +53,6 @@ const FileItem = ({ item, isFolder, onClick }) => {
             <h3 className="font-medium text-gray-800">{item.name}</h3>
             <div className="flex items-center gap-2 text-xs text-gray-500">
                 <span>{item.date}</span>
-                {/* Відображення розміру, якщо це файл */}
                 {!isFolder && item.size && <span>• {formatFileSize(item.size)}</span>}
             </div>
           </div>
@@ -65,7 +66,6 @@ const FileItem = ({ item, isFolder, onClick }) => {
           {showMenu && (
             <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-xl border border-gray-100 z-10 overflow-hidden">
               
-              {/* Кнопка Download (тільки для файлів) */}
               {!isFolder && (
                 <button 
                   onClick={handleDownload} 
@@ -100,7 +100,6 @@ const FileItem = ({ item, isFolder, onClick }) => {
         </div>
       </div>
 
-      {/* --- MODALS --- */}
       <RenameModal 
         isOpen={isRenameOpen} 
         onClose={() => setIsRenameOpen(false)} 
@@ -112,7 +111,9 @@ const FileItem = ({ item, isFolder, onClick }) => {
         isOpen={isShareOpen}
         onClose={() => setIsShareOpen(false)}
         item={item}
-        onSave={(newSharedWithList) => { updatePermissions(item.id, isFolder, newSharedWithList); }}
+        isFolder={isFolder}
+        onFetch={fetchItemPermissions}
+        onSave={saveItemPermissions} 
       />
 
       <DeleteConfirmModal 

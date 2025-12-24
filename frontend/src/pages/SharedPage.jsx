@@ -1,38 +1,24 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Plus, Loader2 } from 'lucide-react';
+import { Loader2, Users } from 'lucide-react';
 import Layout from '../components/Layout';
 import FileItem from '../components/FileItem';
 import { useFileSystem } from '../context/FileSystemContext';
-import { CreateFolderModal } from '../components/Modals';
 
-const Dashboard = () => {
+const SharedPage = () => {
   const navigate = useNavigate();
-  const { folders, files, createFolder, fetchContent, isLoading, downloadFile } = useFileSystem();
-  const [isCreateOpen, setIsCreateOpen] = useState(false);
+  const { folders, files, fetchSharedContent, isLoading, downloadFile } = useFileSystem();
 
   useEffect(() => {
-    fetchContent().catch((error) => {
-      console.log("Folder page error caught:", error);
-      alert(error.response?.data?.message || error.message);
-      navigate('/dashboard');
-    });
-  }, [fetchContent, navigate]);
-
-  const handleCreateFolder = async (name) => {
-    try{
-      await createFolder(name, null);
-      setIsCreateOpen(false);
-    } catch(error) {
-      alert(error.response.data.message || 'Unknown error occurred while creating folder');
-    }
-  };
+    fetchSharedContent();
+  }, [fetchSharedContent]);
 
   if (isLoading) {
     return (
         <Layout>
-           <div className="flex items-center justify-center h-64">
-              <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+           <div className="flex flex-col items-center justify-center min-h-[50vh]">
+              <Loader2 className="w-10 h-10 text-blue-600 animate-spin mb-4" />
+              <p className="text-gray-500">Loading shared files...</p>
            </div>
         </Layout>
     );
@@ -42,24 +28,20 @@ const Dashboard = () => {
 
   return (
     <Layout>
-      <div className="flex justify-between items-center mb-6">
-        <div>
-            <h1 className="text-2xl font-bold text-gray-800">My Drive</h1>
-            <p className="text-gray-500">All files</p>
+      <div className="flex items-center gap-3 mb-6">
+        <div className="p-2 bg-purple-100 rounded-lg">
+            <Users className="w-6 h-6 text-purple-600" />
         </div>
-        <button 
-            onClick={() => setIsCreateOpen(true)}
-            className="flex items-center gap-2 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-            <Plus className="w-5 h-5" />
-            New Folder
-        </button>
+        <div>
+            <h1 className="text-2xl font-bold text-gray-800">Shared with me</h1>
+            <p className="text-gray-500">Files and folders others shared with you</p>
+        </div>
       </div>
 
       {isEmpty ? (
-          <div className="flex flex-col items-center justify-center py-20 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl">
-             <p>Drive is empty</p>
-             <button onClick={() => setIsCreateOpen(true)} className="mt-2 text-blue-600 hover:underline">Create a folder</button>
+          <div className="flex flex-col items-center justify-center py-20 text-gray-400 border-2 border-dashed border-gray-200 rounded-xl bg-gray-50">
+             <Users className="w-12 h-12 text-gray-300 mb-2" />
+             <p>No shared files yet</p>
           </div>
       ) : (
         <>
@@ -96,14 +78,8 @@ const Dashboard = () => {
             )}
         </>
       )}
-
-      <CreateFolderModal 
-        isOpen={isCreateOpen} 
-        onClose={() => setIsCreateOpen(false)} 
-        onCreate={handleCreateFolder} 
-      />
     </Layout>
   );
 };
 
-export default Dashboard;
+export default SharedPage;

@@ -17,4 +17,11 @@ export class DirectoriesController {
     const userId = req.user!['sub'];
     return this.directoriesService.getFolderContent(userId, folderId);
   }
+
+  @UseGuards(JwtAccessGuard)
+  @Get('shared')
+  async getShared(@Req() req: Request) {
+    const userId = req.user!['sub'];
+    return this.directoriesService.getSharedContent(userId);
+  }
 }

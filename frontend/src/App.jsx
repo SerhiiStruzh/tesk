@@ -5,6 +5,7 @@ import LoginPage from './pages/LoginPage';
 import Dashboard from './pages/Dashboard';
 import FolderPage from './pages/FolderPage';
 import { FirebaseAuthProvider } from './context/FirebaseAuthContext';
+import SharedPage from './pages/SharedPage';
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/folder/:id" element={<FolderPage />} />
+          <Route path="/shared" element={<SharedPage />} />
         </Routes>
       </Router>
       </FirebaseAuthProvider>

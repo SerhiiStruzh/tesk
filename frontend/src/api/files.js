@@ -72,7 +72,7 @@ export const getFileDownloadUrl = async (fileId) => {
 export const downloadFile = async (fileId, fileName = "download") => {
   try {
     const { downloadUrl } = await getFileDownloadUrl(fileId);
-    
+
     const link = document.createElement("a");
     link.href = downloadUrl;
     link.download = fileName;

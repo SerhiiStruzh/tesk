@@ -28,7 +28,6 @@ const LoginPage = () => {
           </div>
         </div>
         <h2 className="text-3xl font-bold text-gray-800 mb-2">Cloud Storage</h2>
-        <p className="text-gray-500 mb-8">Securely store and manage your files.</p>
         
         <button 
           onClick={handleLogin}

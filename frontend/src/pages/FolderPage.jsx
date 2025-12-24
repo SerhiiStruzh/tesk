@@ -12,20 +12,20 @@ const FolderPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   
-  // Отримуємо все необхідне з контексту
-  // currentFolder тепер автоматично вираховується в контексті з breadcrumbs
   const { folders, files, currentFolder, createFolder, uploadFile, fetchContent, isLoading } = useFileSystem();
   
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const fileInputRef = useRef(null);
 
-  // Завантажуємо дані при зміні ID в URL
   useEffect(() => {
-    fetchContent(id);
-  }, [id, fetchContent]);
+    fetchContent(id).catch((error) => {
+      console.error("Folder page error caught:", error);
+      alert(error.response?.data?.message || error.message);
+      navigate('/dashboard');
+    });
+  }, [id, fetchContent, navigate]);
 
-  // Обробка вибору файлу
   const handleFileChange = async (event) => {
     try{
       const file = event.target.files[0];
@@ -36,17 +36,19 @@ const FolderPage = () => {
         event.target.value = ''; 
       }
     } catch(error) {
-      alert('error')
+      alert(error.response.data.message || 'Unknown error occurred while uploading file')
     }
   };
 
-  // Створення папки
   const handleCreateFolder = async (name) => {
-      await createFolder(name, id); // Передаємо ID поточної папки
+    try{
+      await createFolder(name, id); 
       setIsCreateOpen(false);
+    } catch(error) {
+      alert(error.response.data.message || 'Unknown error occurred while creating folder')
+    }
   };
 
-  // Стан завантаження
   if (isLoading) {
       return (
           <Layout>
@@ -63,17 +65,14 @@ const FolderPage = () => {
 
   return (
     <Layout>
-      {/* Навігація */}
       <Breadcrumbs /> 
 
-      {/* Панель дій */}
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-xl font-bold text-gray-800 hidden sm:block">
             {folderName}
         </h2>
         
         <div className="flex gap-2">
-            {/* Прихований інпут для файлів */}
             <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -100,7 +99,6 @@ const FolderPage = () => {
         </div>
       </div>
 
-      {/* Вміст папки */}
       {isEmpty ? (
         <div className="bg-white rounded-2xl p-8 border border-gray-100 text-center py-16">
             <div className="inline-flex bg-gray-50 p-6 rounded-full mb-4">
@@ -116,7 +114,6 @@ const FolderPage = () => {
         </div>
       ) : (
         <>
-            {/* Сітка папок */}
             {folders.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
                     {folders.map(folder => (
@@ -130,7 +127,6 @@ const FolderPage = () => {
                 </div>
             )}
             
-            {/* Сітка файлів */}
             {files.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {files.map(file => (
@@ -138,7 +134,6 @@ const FolderPage = () => {
                             key={file.id} 
                             item={file} 
                             isFolder={false} 
-                            // onClick={() => alert(`Opening ${file.name}`)} 
                             onClick={() => downloadFile(file.id, file.name)}
                         />
                     ))}
@@ -147,7 +142,6 @@ const FolderPage = () => {
         </>
       )}
 
-      {/* Модалка створення папки */}
       <CreateFolderModal 
         isOpen={isCreateOpen} 
         onClose={() => setIsCreateOpen(false)}

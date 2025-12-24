@@ -5,6 +5,7 @@ import { PrismaService } from 'src/prisma/prisma.service';
 import { RenameFileDto } from './dto/rename-file.dto';
 import { PermissionsService } from 'src/permissions/permissions.service';
 import { DownloadFileDto } from './dto/download-file.dto';
+import { Role } from '@prisma/client';
 
 @Injectable()
 export class FilesService {
@@ -14,9 +15,10 @@ export class FilesService {
     private prisma: PrismaService,
     private permissionsControl: PermissionsService,
     @Inject('MINIO_CLIENT') private minioClient: Client,
+    @Inject('MINIO_CLIENT_LOCALHOST') private localhostClient: Client,
     private configService: ConfigService,
   ) {
-    this.bucketName = this.configService.getOrThrow<string>('MINIO_BUCKET');
+    this.bucketName = this.configService.getOrThrow<string>('minio.bucket');
   }
 
   async uploadFile(
@@ -62,6 +64,12 @@ export class FilesService {
         storageKey,
         ownerId: userId,
         parentId: parentId ?? null,
+        permissions: {
+            create: {
+                userId: userId,
+                role: Role.EDITOR
+            }
+        }
       },
       select: {
         id: true,
@@ -155,14 +163,25 @@ export class FilesService {
       throw new ForbiddenException('No permission to download this file');
     }
 
-    const downloadUrl = await this.minioClient.presignedGetObject(
-      this.bucketName,
-      file.storageKey,
-      60 * 30, 
-      {
-        'response-content-disposition': `attachment; filename="${encodeURIComponent(file.name)}"`,
-      },
-    );
+    //BUG with docker localhost in prod should use this
+    
+    // const downloadUrl: string = await this.minioClient.presignedGetObject(
+    //   this.bucketName,
+    //   file.storageKey,
+    //   60 * 30, 
+    //   {
+    //     'response-content-disposition': `attachment; filename="${encodeURIComponent(file.name)}"`,
+    //   },
+    // );
+
+    const downloadUrl: string = await this.localhostClient.presignedGetObject(
+       this.bucketName,
+       file.storageKey,
+       60 * 30, 
+       {
+         'response-content-disposition': `attachment; filename="${encodeURIComponent(file.name)}"`,
+       },
+     );
 
     return { downloadUrl };
   }

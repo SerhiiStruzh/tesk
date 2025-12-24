@@ -28,6 +28,20 @@ import { PermissionsModule } from 'src/permissions/permissions.module';
                 },
                 inject: [ConfigService],
               },
+              {
+                provide: 'MINIO_CLIENT_LOCALHOST',
+                useFactory: (configService: ConfigService) => {
+                  return new Client({
+                    endPoint: 'localhost',
+                    port: configService.getOrThrow<number>('minio.port'),
+                    useSSL: configService.getOrThrow<boolean>('minio.useSSL'),
+                    accessKey: configService.getOrThrow<string>('minio.accessKey'),
+                    secretKey: configService.getOrThrow<string>('minio.secretKey'),
+                    region: 'us-east-1',
+                  });
+                },
+                inject: [ConfigService],
+              },
               FilesService,
               JwtAccessGuard
              ],

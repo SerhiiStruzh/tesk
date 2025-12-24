@@ -6,7 +6,6 @@ import { useFileSystem } from '../context/FileSystemContext';
 const Breadcrumbs = () => {
   const { breadcrumbs } = useFileSystem();
 
-  // Якщо breadcrumbs порожні, значить ми в корені, показуємо просто My Drive (неклікабельний або посилання на dashboard)
   if (!breadcrumbs || breadcrumbs.length === 0) {
     return (
       <nav className="flex items-center text-sm text-gray-500 mb-6">
@@ -20,7 +19,6 @@ const Breadcrumbs = () => {
 
   return (
     <nav className="flex items-center text-sm text-gray-500 mb-6 overflow-x-auto whitespace-nowrap pb-2">
-      {/* Завжди показуємо посилання на корінь на початку */}
       <Link to="/dashboard" className="flex items-center hover:text-blue-600 transition-colors">
         <Home className="w-4 h-4 mr-1" />
         My Drive
@@ -34,12 +32,10 @@ const Breadcrumbs = () => {
             <ChevronRight className="w-4 h-4 mx-1 text-gray-400" />
             
             {isLast ? (
-              // Остання крихта - це поточна папка (просто текст)
               <span className="font-medium text-gray-800">
                 {crumb.name}
               </span>
             ) : (
-              // Проміжні крихти - посилання
               <Link 
                 to={`/folder/${crumb.id}`} 
                 className="hover:text-blue-600 transition-colors"
